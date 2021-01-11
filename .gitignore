@@ -1,5 +1,4 @@
 run.sh
 .vscode
 __pycache__
-*.csv
 venv
