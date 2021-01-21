@@ -5,6 +5,8 @@ import csv
 
 import requests
 
+from pprint import pprint
+
 
 def get_api_key():
     return os.getenv('API_KEY')
@@ -75,15 +77,19 @@ def main(filename):
         else:
             print(cloned_campaign.json())
 
-        # Паркую кампании к доменам
+        # Создаю и Паркую кампании к доменам
         domain = create_domain({
             'name': domain,
             'is_ssl': True,
             'default_campaign_id': cloned_campaign_id,
             'catch_not_found': True
-        })
+        }).json()
+        # print(domain.json())
 
-        print(domain.json())
+        # Добавляю домен к кампании
+        campaign_with_updated_domain = update_campaign(cloned_campaign_id,
+            {'domain_id': int(domain[0]['id'])}).json()
+        pprint(campaign_with_updated_domain)
     
 
 if __name__ == "__main__":
