@@ -58,38 +58,55 @@ def create_domain(payload):
         f'admin_api/v1/domains', payload)
 
 
-def main(filename):
-    campaigns = export_from_csv(filename)[1:]
-    for campaign in campaigns:
-        campaign_name = campaign[0]
-        domain = campaign[1]
-        template_id = campaign[2]
-        group_id = campaign[3]
+def get_all_domains():
+    return send_request('GET', f'admin_api/v1/domains')
 
-        # Клонирую кампании и меняю имена
-        cloned_campaign = clone_campaign(template_id).json()
-        cloned_campaign_id = cloned_campaign[0]['id']
+
+def update_domains_in_campaigns(filename):
+    data = export_from_csv(filename)[1:]
+    for row in data:
+        domain_id = int(row[0])
+        campaign_id = row[2]
+        updated_campaign = update_campaign(campaign_id, {'domain_id': domain_id})
+        print(updated_campaign)
         
-        cloned_campaign = update_campaign(cloned_campaign_id,
-            {'name': campaign_name, 'group_id': group_id})
-        if cloned_campaign.status_code == 200:
-            print(f'Кампания {campaign_name} успешно создана!')
-        else:
-            print(cloned_campaign.json())
 
-        # Создаю и Паркую кампании к доменам
-        domain = create_domain({
-            'name': domain,
-            'is_ssl': True,
-            'default_campaign_id': cloned_campaign_id,
-            'catch_not_found': True
-        }).json()
-        # print(domain.json())
+def main(filename):
+    choice = input('Enter, чтобы припарковать домены\n1, чтобы обновить домены в кампаниях\n')
+    if choice == '1':
+        update_domains_in_campaigns(filename)
+    else:
+        campaigns = export_from_csv(filename)[1:]
+        for campaign in campaigns:
+            campaign_name = campaign[0]
+            domain = campaign[1]
+            template_id = campaign[2]
+            group_id = campaign[3]
 
-        # Добавляю домен к кампании
-        campaign_with_updated_domain = update_campaign(cloned_campaign_id,
-            {'domain_id': int(domain[0]['id'])}).json()
-        pprint(campaign_with_updated_domain)
+            # Клонирую кампании и меняю имена
+            cloned_campaign = clone_campaign(template_id).json()
+            cloned_campaign_id = cloned_campaign[0]['id']
+            
+            cloned_campaign = update_campaign(cloned_campaign_id,
+                {'name': campaign_name, 'group_id': group_id})
+            if cloned_campaign.status_code == 200:
+                print(f'Кампания {campaign_name} успешно создана!')
+            else:
+                print(cloned_campaign.json())
+
+            # Создаю и Паркую кампании к доменам
+            domain = create_domain({
+                'name': domain,
+                'is_ssl': True,
+                'default_campaign_id': cloned_campaign_id,
+                'catch_not_found': True
+            }).json()
+            # print(domain.json())
+
+            # Добавляю домен к кампании
+            campaign_with_updated_domain = update_campaign(cloned_campaign_id,
+                {'domain_id': int(domain[0]['id'])}).json()
+            pprint(campaign_with_updated_domain)
     
 
 if __name__ == "__main__":
